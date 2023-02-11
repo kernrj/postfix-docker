@@ -13,7 +13,7 @@ Ports to open:
 Required variables:
 - CERT_FILE: Path to the certificate file within the container
 - KEY_FILE: Path to the private key file within the container
-- EMAIL_HOST: The hostname of the server. This should match the reverse-dns for the server's IP address."
+- EMAIL_HOST: The hostname of the server. This should match the reverse-dns for the server's IP address.
 - RECEIVE_FOR_DOMAINS: A space- or comma-separated list of virtual domains this server receives email for.
 
 Example:

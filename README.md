@@ -1,3 +1,5 @@
+Dockerfile for a Postfix SMTP server.
+
 To change the server's mailer_type, set the MAILER_TYPE build arg when building the container.
 
 For example:

@@ -73,7 +73,6 @@ fi
 
 echo "Starting postfix"
 postfix start-fg &
-readonly POSTFIX_PID=$!
 
 cat /etc/postfix/main.cf
 
@@ -97,5 +96,3 @@ while true; do
     sleep 60 &
     wait $!
 done
-wait $POSTFIX_PID
-

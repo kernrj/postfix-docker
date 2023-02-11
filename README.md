@@ -1,14 +1,18 @@
 To change the server's mailer_type, set the MAILER_TYPE build arg when building the container.
+
 For example:
 ```
 docker build -t my-postfix --build-arg MAILER_TYPE="Internet Site" .
 ```
 
+Ports to open:
+- 25: SMTP
+
 Required variables:
-CERT_FILE: Path to the certificate file within the container
-KEY_FILE: Path to the private key file within the container
-EMAIL_HOST: The hostname of the server. This should match the reverse-dns for the server's IP address."
-RECEIVE_FOR_DOMAINS: A space- or comma-separated list of virtual domains this server receives email for.
+- CERT_FILE: Path to the certificate file within the container
+- KEY_FILE: Path to the private key file within the container
+- EMAIL_HOST: The hostname of the server. This should match the reverse-dns for the server's IP address."
+- RECEIVE_FOR_DOMAINS: A space- or comma-separated list of virtual domains this server receives email for.
 
 Example:
 ```

@@ -65,12 +65,12 @@ services:
               source: /etc/letsencrypt/live/mx1.your-server.com/privkey.pem
               target: /etc/postfix/privkey.pem
               read_only: true
-	    - type: bind
-	      source: ./postfix-data
-	      target: /var/spool/postfix
-	    - type: bind
-	      source: ./virtual
-	      target: /etc/postfix/virtual
+            - type: bind
+              source: ./postfix-data
+              target: /var/spool/postfix
+            - type: bind
+              source: ./virtual
+              target: /etc/postfix/virtual
         environment:
             - EMAIL_HOST=mx1.your-server.com
             - RECEIVE_FOR_DOMAINS="domain1.com, domain2.com"

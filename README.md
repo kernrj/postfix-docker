@@ -19,10 +19,23 @@ docker build -t my-postfix --build-arg MAILER_TYPE="Internet Site" .
 - EMAIL_HOST: The hostname of the server. This should match the reverse-dns for the server's IP address.
 - RECEIVE_FOR_DOMAINS: A comma-separated list of virtual domains this server receives email for.
 
-## User aliases
-This section is optional. An alias map can be mounted to /etc/postfix/virtual. It will be checked for new entries once per minute, but can be refreshed sooner by running `postmap /etc/postfix/virtual` inside the container.
+## Volumes
+To preserve Postfix data across restarts, map a writeable directory to /var/spool/postfix.
 
-## Example
+The TLS certificate and private key also need to be mapped.
+- Map the private key file to /etc/postfix/privkey.pem
+- Map the certificate file to /etc/postfix/cert.pem
+
+Optionally, a user alias file can be mapped to /etc/postfix/virtual.
+
+## User aliases
+An alias map can be mounted to /etc/postfix/virtual. It will be checked for new entries once per minute, but can be refreshed sooner by running `postmap /etc/postfix/virtual` inside the container.
+
+This file contains maps incoming addresses to an actual account.
+
+For example: `alias@your-domain.com real-email@your-domain.com`.
+
+## Command-line Example
 ```
 docker run \
     --mount type=bind,source=/etc/letsencrypt/live/your-email-servers-hostname.com/privkey.pem,destination=/etc/postfix/privkey.pem,readonly=true \
@@ -52,11 +65,17 @@ services:
               source: /etc/letsencrypt/live/mx1.your-server.com/privkey.pem
               target: /etc/postfix/privkey.pem
               read_only: true
+	    - type: bind
+	      source: ./postfix-data
+	      target: /var/spool/postfix
+	    - type: bind
+	      source: ./virtual
+	      target: /etc/postfix/virtual
         environment:
             - EMAIL_HOST=mx1.your-server.com
             - RECEIVE_FOR_DOMAINS="domain1.com, domain2.com"
         ports:
-            - 25:25
+            - "25:25"
 
     dovecot:
         image: kernrj/dovecot
@@ -78,12 +97,11 @@ services:
         environment:
             - POSTMASTER_EMAIL=your_email@example.com
         ports:
-            - 993:993
+            - "993:993"
 
     certbot: # creates or renews a certificate for the email server once every 30 days
         image: kernrj/certbot
         restart: always
-        init: true
         volumes:
             - type: bind
               source: /etc/letsencrypt
@@ -93,5 +111,5 @@ services:
             - CERT_EMAIL=your_email@example.com
             - AGREE_TOS=yes # Specifying "yes" means you agree to the terms of service in the certbot application in the container being launched. This is equivalent to `certbot --agree-tos`.
         ports:
-            - 80:80
+            - "80:80"
 ```

@@ -12,7 +12,7 @@ To change the mailer_type, set the MAILER_TYPE build arg when building the conta
 docker build -t my-postfix --build-arg MAILER_TYPE="Internet Site" .
 ```
 
-# Ports to open
+## Ports to open
 - 25: SMTP
 
 ## Required variables

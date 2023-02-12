@@ -1,37 +1,43 @@
-Dockerfile for a Postfix SMTP server.
+# Dockerfile for a Postfix SMTP server
 
-To change the server's mailer_type, set the MAILER_TYPE build arg when building the container.
 
-For example:
+## Building
+The default server mailer_type is "Internet Site".
+```
+docker build -t my-postfix .
+```
+
+To change the mailer_type, set the MAILER_TYPE build arg when building the container.
 ```
 docker build -t my-postfix --build-arg MAILER_TYPE="Internet Site" .
 ```
 
-Ports to open:
+# Ports to open
 - 25: SMTP
 
-Required variables:
-- CERT_FILE: Path to the certificate file within the container
-- KEY_FILE: Path to the private key file within the container
+## Required variables
 - EMAIL_HOST: The hostname of the server. This should match the reverse-dns for the server's IP address.
-- RECEIVE_FOR_DOMAINS: A space- or comma-separated list of virtual domains this server receives email for.
+- RECEIVE_FOR_DOMAINS: A comma-separated list of virtual domains this server receives email for.
 
-Example:
+## User aliases
+This section is optional. An alias map can be mounted to /etc/postfix/virtual. It will be checked for new entries once per minute, but can be refreshed sooner by running `postmap /etc/postfix/virtual` inside the container.
+
+## Example
 ```
 docker run \
-    --mount type=bind,source=/etc/letsencrypt/live/your-email-servers-hostname.com/privkey.pem,destination=/certs/privkey.pem,readonly=true \
-    --mount type=bind,source=/etc/letsencrypt/live/your-email-servers-hostname.com/fullchain.pem,destination=/certs/fullchain.pem,readonly=true \
-    -e CERT_FILE=/certs/fullchain.pem \
-    -e KEY_FILE=/certs/privkey.pem \
-    -e RECEIVE_FOR_DOMAINS="domain-to-receive-email-for.com another-domain-to-receive-email-for.com" \
+    --mount type=bind,source=/etc/letsencrypt/live/your-email-servers-hostname.com/privkey.pem,destination=/etc/postfix/privkey.pem,readonly=true \
+    --mount type=bind,source=/etc/letsencrypt/live/your-email-servers-hostname.com/fullchain.pem,destination=/etc/postfix/fullchain.pem,readonly=true \
+    -e RECEIVE_FOR_DOMAINS="domain-to-receive-email-for.com, another-domain-to-receive-email-for.com" \
     -e EMAIL_HOST=your-email-servers-hostname.com \
     --rm \
     -p 25:25 \
     kernrj/postfix
 ```
 
-Example docker-compose.yml, also including dovecot and certbot:
-```
+## docker-compose example
+Example docker-compose.yml, also including [dovecot](https://github.com/kernrj/dovecot-docker.git) and [certbot](https://github.com/kernrj/certbot-docker.git):
+
+```yml
 version: '2'
 services:
     postfix:
@@ -40,17 +46,15 @@ services:
         volumes:
             - type: bind
               source: /etc/letsencrypt/live/mx1.your-server.com/fullchain.pem
-              target: /certs/fullchain.pem
+              target: /etc/postfix/cert.pem
               read_only: true
             - type: bind
               source: /etc/letsencrypt/live/mx1.your-server.com/privkey.pem
-              target: /certs/privkey.pem
+              target: /etc/postfix/privkey.pem
               read_only: true
         environment:
             - EMAIL_HOST=mx1.your-server.com
-            - RECEIVE_FOR_DOMAINS="domain1.com domain2.com"
-            - CERT_FILE=/certs/fullchain.pem
-            - KEY_FILE=/certs/privkey.pem
+            - RECEIVE_FOR_DOMAINS="domain1.com, domain2.com"
         ports:
             - 25:25
 

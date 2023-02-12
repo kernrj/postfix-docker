@@ -22,52 +22,22 @@ if [ "$EMAIL_HOST" == "" ]; then
     exit 1;
 fi
 
-if [ "$KEY_FILE" == "" ]; then
-    echo "Specify the path (within the container) to the private key file with KEY_FILE" >&2
-    exit 1;
-fi
-
-if [ "$CERT_FILE" == "" ]; then
-    echo "Specify the path (within the container) to the certificate file with CERT_FILE" >&2
-    exit 1;
-fi
-
 echo "$EMAIL_HOST" > /etc/mailname
 
-cat /etc/postfix/main.cf | \
-    sed -E "s/email_host_replace_me/$EMAIL_HOST/g" | \
-    sed -E "s|^(mydestination[= ].*)\$|\\1 $RECEIVE_FOR_DOMAINS|" | \
-    sed -E "s|^(smtpd_tls_cert_file[= ].*)\$|smtpd_tls_cert_file=$CERT_FILE|" | \
-    sed -E "s|^(smtpd_tls_key_file[= ].*)\$|smtpd_tls_key_file=$KEY_FILE|" | \
-    sed -E "s|^(smtpd_banner[= ].*)\$|smtpd_banner = $EMAIL_HOST ESMTP \$mail_name \(Ubuntu\)|" \
-	> /tmp/main.cf
+postconf -e \
+	 "virtual_mailbox_domains = $RECEIVE_FOR_DOMAINS" \
+	 "smtpd_banner=${EMAIL_HOST} ESMTP \$mail_name (Ubuntu)"
 
-mv /tmp/main.cf /etc/postfix/
-
-FILE_RETRIES=0
-readonly FILE_MAX_RETRIES=20
-while [ ! -f "$CERT_FILE" ] && [ "$FILE_RETRIES" -lt "$FILE_MAX_RETRIES" ]; do
-    echo "Certificate file [$CERT_FILE] does not exist. Waiting..."
-    ls -l $(dirname "$CERT_FILE")
-    sleep 5
-    ((FILE_RETRIES++)) || true
-done
+readonly CERT_FILE=/etc/postfix/cert.pem
+readonly KEY_FILE=/etc/postfix/privkey.pem
 
 if [ ! -f "$CERT_FILE" ]; then
-    echo "Certificate file [$CERT_FILE] not found. Exiting." >&2
+    echo "Certificate file [$CERT_FILE] not found. The certificate file needs to be mounted into the container." >&2
     exit 1
 fi
 
-FILE_RETRIES=0
-readonly 
-while [ ! -f "$KEY_FILE" ] && [ "$FILE_RETRIES" -lt "$FILE_MAX_RETRIES" ]; do
-    echo "Private key file [$KEY_FILE] does not exist. Waiting..."
-    sleep 5
-    ((FILE_RETRIES++)) || true
-done
-
 if [ ! -f "$KEY_FILE" ]; then
-    echo "Private key file [$KEY_FILE] not found. Exiting." >&2
+    echo "Private key file [$KEY_FILE] not found. They private key needs to be mounted into the container." >&2
     exit 1
 fi
 
@@ -82,6 +52,8 @@ CERT_MD5=$(md5sum "$CERT_FILE" | cut -d ' ' -f1)
 KEY_MD5=$(md5sum "$KEY_FILE" | cut -d ' ' -f1)
 
 while true; do
+    postmap /etc/postfix/virtual # update with any new entries from /etc/postfix/virtual
+
     NEW_CERT_MD5=$(md5sum "$CERT_FILE" | cut -d ' ' -f1)
     NEW_KEY_MD5=$(md5sum "$KEY_FILE" | cut -d ' ' -f1)
 
